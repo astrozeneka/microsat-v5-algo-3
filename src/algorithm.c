@@ -82,7 +82,8 @@ void readConfig(int *output, FILE *f){
     int a = 0;
 }
 
-void search_perfect_microsatellites(microsatelliteArray *output, FILE *fptr, int *minRepeats){
+void search_perfect_microsatellites(microsatelliteArray *output, FILE *fptr, int *minRepeats, int *n_length,
+                                    int *gc_length, int *total_length){
     printf("");
 
     char sequenceName[64];
@@ -96,6 +97,34 @@ void search_perfect_microsatellites(microsatelliteArray *output, FILE *fptr, int
     int buffer_offset=0;
     buffer[0] = (char)0;// In which position in the file the buffer is (used when searching microsatellite)
 
+    for (i=0; !feof(fptr); i++){
+        if(buffer[i-buffer_offset] == 0){
+            // Get length of the previous buffer
+            int leap = strlen(buffer);
+            fgets(buffer, sizeof(buffer),  fptr);
+            strtok(buffer, "\n");
+
+            if(buffer[0] == '>'){
+                sscanf(buffer, "%63s", sequenceName);
+                // empty buffer
+                i--;
+                buffer[0] = (char)0;
+                buffer_offset=0;
+                continue;
+            }else{
+                buffer_offset+= leap;
+            }
+        }
+        if(buffer[i-buffer_offset] == 'N')
+            *n_length+=1;
+        else if(buffer[i-buffer_offset] == 'C' || buffer[i-buffer_offset] == 'G')
+            *gc_length+=1;
+
+        *total_length+=1;
+    }
+
+    buffer_offset = 0;
+    rewind(fptr);
     for (i=0; !feof(fptr);i++){
         if(buffer[i-buffer_offset] == 0){
             // Get length of the previous buffer
@@ -139,7 +168,7 @@ void search_perfect_microsatellites(microsatelliteArray *output, FILE *fptr, int
                 m->motif[j] = 0;
 
                 m->sequence=malloc(64*sizeof(char));
-                strcpy(m->sequence, sequenceName);
+                strcpy(m->sequence, sequenceName+1);
 
                 m->period=j;
                 m->repeat=repeat;
@@ -183,6 +212,9 @@ int main(int argc, char **argv){
         readConfig(minRepeats,  fptr);
     }
 
+    int *N_length = malloc(sizeof(int));
+    int *GC_length = malloc(sizeof(int));
+    int *Total_length = malloc(sizeof(int));
     microsatelliteArray *microsatellites;
     if(infile != NULL){
         FILE *fptr;
@@ -190,7 +222,8 @@ int main(int argc, char **argv){
 
         microsatellites=malloc(sizeof(microsatelliteArray));
         initMicrosatelliteArray(microsatellites, SEQ_MICROSATELLITE_MEMORY_CHUNK);
-        search_perfect_microsatellites(microsatellites, fptr, minRepeats);
+        search_perfect_microsatellites(microsatellites, fptr, minRepeats, N_length
+        , GC_length, Total_length);
 
     }
 
@@ -209,6 +242,9 @@ int main(int argc, char **argv){
                     microsatellites->array[i].end,
                     microsatellites->array[i].length);
         }
+        fprintf(fptr, "# Total-length: %d\n", Total_length);
+        fprintf(fptr, "# GC-length: %d\n", GC_length);
+        fprintf(fptr, "# N-length: %d\n", N_length);
         fclose(fptr);
         printf("File written\n");
     }
