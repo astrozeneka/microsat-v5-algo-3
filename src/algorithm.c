@@ -242,9 +242,9 @@ int main(int argc, char **argv){
                     microsatellites->array[i].end,
                     microsatellites->array[i].length);
         }
-        fprintf(fptr, "# Total-length: %d\n", Total_length);
-        fprintf(fptr, "# GC-length: %d\n", GC_length);
-        fprintf(fptr, "# N-length: %d\n", N_length);
+        fprintf(fptr, "# Total-length: %d\n", *Total_length);
+        fprintf(fptr, "# GC-length: %d\n", *GC_length);
+        fprintf(fptr, "# N-length: %d\n", *N_length);
         fclose(fptr);
         printf("File written\n");
     }
